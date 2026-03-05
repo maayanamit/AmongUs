@@ -10,11 +10,11 @@ WORKDIR /postgres_python
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy in the source code
-COPY src ./src
+COPY . .
 EXPOSE 8080
 
 # Setup an app user so the container doesn't run as the root user
 #RUN useradd app
 #USER app
 
-CMD ["uvicorn", "python", "postgres_con"]
+CMD . .venv/bin/activate; uvicorn main:app --host 0.0.0.0 --port 4001 --reload

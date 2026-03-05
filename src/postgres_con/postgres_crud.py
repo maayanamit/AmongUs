@@ -2,22 +2,23 @@ import datetime
 
 from sqlalchemy import select
 
-from src.postgres_con import engine, Deployment
+from src.postgres_con import engine, Deployment, StatusDeployment
 from sqlalchemy.orm import Session
 from src.routes.models import DeploymentPost, DeploymentGetById, DeploymentId
 
 
 def add_deployment(deployment_post: DeploymentPost):
     session = Session(engine)
-    with session.begin():
-        if session.query(Deployment).filter(Deployment.db_name == deployment_post.db_name and
-                                            Deployment.username == deployment_post.username).first():
+    with (session.begin()):
+        if session.query(Deployment).filter(Deployment.db_name == deployment_post.db_name).first():
             return False
-        deployment: Deployment = Deployment(db_name=deployment_post.db_name, status="CREATED",
+        deployment: Deployment = Deployment(db_name=deployment_post.db_name, status=StatusDeployment.CREATED,
                                             username=deployment_post.username,
                                             creation_time=datetime.datetime.now())
         session.add(deployment)
-        return DeploymentId(**{"id": deployment.id})  # TODO what to return?
+    dep = session.scalar(select(Deployment).where(Deployment.db_name == deployment_post.db_name))
+    session.close()
+    return DeploymentId(**{"id": str(dep.id)})  # TODO what to return?
 
 
 def get_deployment_by_id(id_dep: str):
@@ -25,7 +26,11 @@ def get_deployment_by_id(id_dep: str):
     query = select(Deployment).where(Deployment.id == id_dep)
     result = session.scalar(query)
     session.close()
-    return DeploymentGetById(**result.__dict__.pop("username"))
+    if result:
+        result_dict = result.as_dict()
+        result_dict.pop("username")
+        return DeploymentGetById(**result_dict)
+    return None
 
 
 def update_deployment_name(id_dep: str, new_name: str) -> str:  # new name
@@ -43,7 +48,7 @@ def delete_by_id(id_dep: str):  # TODO check that id exists in db
     with session.begin():
         query = select(Deployment).where(Deployment.id == id_dep)
         deployment: Deployment = session.scalar(query)
-        deployment.status = "DELETED"
+        deployment.status = StatusDeployment.DELETED
         return True
 
 

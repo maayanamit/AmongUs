@@ -4,7 +4,10 @@ from config import mongo_connection_uri
 
 def create_database(name: str):
     client: MongoClient = MongoClient(mongo_connection_uri)
-    mydb = client[name]
+    db = client[name]
+    collection = db["temp"]
+    post = {}
+    collection.insert_one(post)
     client.close()
 
 
