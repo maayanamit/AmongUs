@@ -1,0 +1,51 @@
+import datetime
+
+from sqlalchemy import select
+
+from src.postgres_con import engine, Deployment
+from sqlalchemy.orm import Session
+from src.routes.models import DeploymentPost, DeploymentGetById, DeploymentId
+
+
+def add_deployment(deployment_post: DeploymentPost):
+    session = Session(engine)
+    with session.begin():
+        if session.query(Deployment).filter(Deployment.db_name == deployment_post.db_name and
+                                            Deployment.username == deployment_post.username).first():
+            return False
+        deployment: Deployment = Deployment(db_name=deployment_post.db_name, status="CREATED",
+                                            username=deployment_post.username,
+                                            creation_time=datetime.datetime.now())
+        session.add(deployment)
+        return DeploymentId(**{"id": deployment.id})  # TODO what to return?
+
+
+def get_deployment_by_id(id_dep: str):
+    session = Session(engine)
+    query = select(Deployment).where(Deployment.id == id_dep)
+    result = session.scalar(query)
+    session.close()
+    return DeploymentGetById(**result.__dict__.pop("username"))
+
+
+def update_deployment_name(id_dep: str, new_name: str) -> str:  # new name
+    session = Session(engine)
+    with session.begin():
+        query = select(Deployment).where(Deployment.id == id_dep)
+        deployment: Deployment = session.scalar(query)
+        old_name = deployment.db_name
+        deployment.db_name = new_name
+        return old_name
+
+
+def delete_by_id(id_dep: str):  # TODO check that id exists in db
+    session = Session(engine)
+    with session.begin():
+        query = select(Deployment).where(Deployment.id == id_dep)
+        deployment: Deployment = session.scalar(query)
+        deployment.status = "DELETED"
+        return True
+
+
+def get_connection_string(id_dep: str):
+    pass
