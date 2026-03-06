@@ -48,7 +48,7 @@ def update_deployment_name(id_dep: str, new_name: str):
     return {"id": str(dep.id), "db_name": old_name}
 
 
-def delete_by_id(id_dep: str, username: str):  # TODO check that id exists in db
+def delete_by_id(id_dep: str, username: str):
     session = Session(engine)
     with session.begin():
         query = select(Deployment).where(Deployment.id == id_dep)

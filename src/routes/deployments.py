@@ -1,10 +1,11 @@
 import secrets
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from src.exceptions.deployment_exceptions import InvalidUsername, DatabaseExists, NotFound
+from src.exceptions.deployment_exceptions import InvalidUsername, DatabaseExists, NotFound, UuidInvalid
 from src.mongo_con import mongo_crud
 from src.postgres_con import postgres_crud
 from src.routes.models import DeploymentPost, DeploymentDbname
@@ -58,18 +59,29 @@ def create_deployment(username: Annotated[str, Depends(get_current_username)],
         return result
 
 
+def uuid_is_valid(value_id: str):
+    try:
+        return str(UUID(str(value_id))) == str(value_id)
+    except ValueError:
+        return False
+
+
 @router.get("/deployments/:{deployment_id}", status_code=200)
 def get_by_id(username: Annotated[str, Depends(get_current_username)], deployment_id: str):
-    response = postgres_crud.get_deployment_by_id(deployment_id)  # TODO check that id is in uuid syntax
+    if not uuid_is_valid(deployment_id):
+        raise UuidInvalid()
+    response = postgres_crud.get_deployment_by_id(deployment_id)
     if not response:
         raise NotFound()
     elif response.db_name.startswith(username):
         return response
-    raise InvalidUsername("your username does not have access to this database")  # TODO check that its correct
+    raise InvalidUsername("your username does not have access to this database")
 
 
 @router.put("/deployments/:{deployment_id}", status_code=200)
 def update_db(username: Annotated[str, Depends(get_current_username)], deployment_id: str, db_name: DeploymentDbname):
+    if not uuid_is_valid(deployment_id):
+        raise UuidInvalid()
     if not db_name.db_name.startswith(username):
         raise InvalidUsername("The database name's prefix has to be your username")
     else:
@@ -84,6 +96,8 @@ def update_db(username: Annotated[str, Depends(get_current_username)], deploymen
 
 @router.delete("/deployments/:{deployment_id}:{dep_username}", status_code=204)
 def delete_by_id(username: Annotated[str, Depends(get_current_username)], deployment_id: str, dep_username: str):
+    if not uuid_is_valid(deployment_id):
+        raise UuidInvalid()
     if username != dep_username:
         raise InvalidUsername("your username and the username entered do not match! you do not have access to this db")
     result = postgres_crud.delete_by_id(deployment_id, dep_username)

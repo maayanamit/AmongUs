@@ -17,3 +17,9 @@ class NotFound(HTTPException):
     def __init__(self, msg="There is no a database with that ID"):
         self.msg = msg
         super().__init__(status_code=404, detail=self.msg)
+
+
+class UuidInvalid(HTTPException):
+    def __init__(self, msg="The id is incorrect UUID syntax"):
+        self.msg = msg
+        super().__init__(status_code=404, detail=self.msg)

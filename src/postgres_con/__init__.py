@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import create_engine, Enum
 from sqlalchemy import MetaData, DateTime
 import logging
-
+from config import postgres_con_url, postgres_db_name
 
 from sqlalchemy.orm import mapped_column, Mapped, DeclarativeBase
 
@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_db_engine():
-    return create_engine('postgresql+psycopg2://{}:{}@{}/{}'.format('postgres', 'postgres', 'localhost:5432', 'amongodb'))
+    return create_engine(postgres_con_url.format('postgres', 'postgres', 'localhost:5432', 'amongodb'))
 
 
 engine = get_db_engine()
@@ -31,7 +31,7 @@ class Base(DeclarativeBase):
 
 
 class Deployment(Base):
-    __tablename__ = "deployments_db"
+    __tablename__ = postgres_db_name
     id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
     db_name: Mapped[str] = mapped_column()
     status: Mapped[StatusDeployment] = mapped_column(Enum(StatusDeployment, name="status"))
