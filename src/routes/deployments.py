@@ -1,23 +1,24 @@
 import secrets
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from src.exceptions.deployment_exceptions import InvalidUsername, DatabaseExists, NotFound
 from src.mongo_con import mongo_crud
 from src.postgres_con import postgres_crud
-from src.routes.models import DeploymentPost, DeploymentId, DeploymentGetById, DeploymentDbname
+from src.routes.models import DeploymentPost, DeploymentDbname
 
 router = APIRouter()
 
 security = HTTPBasic()
 
+
 def get_current_username(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
 ):
     current_username_bytes = credentials.username.encode("utf8")
-    correct_username_bytes = b"stanleyjobson"
+    correct_username_bytes = b"stanleyjobson"  # TODO change to list of users
     is_correct_username = secrets.compare_digest(
         current_username_bytes, correct_username_bytes
     )
@@ -51,7 +52,7 @@ def create_deployment(username: Annotated[str, Depends(get_current_username)],
         raise InvalidUsername("the db name prefix is not your username")
     else:
         result = postgres_crud.add_deployment(db_details)
-        if result is False:
+        if not result:
             raise DatabaseExists()
         mongo_crud.create_database(db_details.db_name)
         return result
@@ -90,3 +91,8 @@ def delete_by_id(username: Annotated[str, Depends(get_current_username)], deploy
         raise InvalidUsername("The username entered and the ID do not match")
     else:
         mongo_crud.delete_database(result)
+
+
+@router.get("/deployments/:{deployment_id}:{dep_username}", status_code=200)
+def get_connection_string(username: Annotated[str, Depends(get_current_username)], deployment_id: str, dep_username: str):
+    pass

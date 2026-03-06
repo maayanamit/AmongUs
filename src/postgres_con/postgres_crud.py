@@ -11,14 +11,14 @@ def add_deployment(deployment_post: DeploymentPost):
     session = Session(engine)
     with (session.begin()):
         if session.query(Deployment).filter(Deployment.db_name == deployment_post.db_name).first():
-            return False
+            return None
         deployment: Deployment = Deployment(db_name=deployment_post.db_name, status=StatusDeployment.CREATED,
                                             username=deployment_post.username,
                                             creation_time=datetime.datetime.now())
         session.add(deployment)
     dep = session.scalar(select(Deployment).where(Deployment.db_name == deployment_post.db_name))
     session.close()
-    return DeploymentId(**{"id": str(dep.id)})  # TODO what to return?
+    return DeploymentId(**{"id": str(dep.id)})
 
 
 def get_deployment_by_id(id_dep: str):

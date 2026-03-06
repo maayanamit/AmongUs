@@ -8,13 +8,15 @@ WORKDIR /postgres_python
 
 # Install the application dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install fastapi uvicorn
 
+ENTRYPOINT ["uvicorn", "main:app", "--host" , "0.0.0.0", "--port", "8080"]
 # Copy in the source code
 COPY . .
-EXPOSE 8080
+EXPOSE 8000
 
 # Setup an app user so the container doesn't run as the root user
 #RUN useradd app
 #USER app
 
-CMD . .venv/bin/activate; uvicorn main:app --host 0.0.0.0 --port 4001 --reload
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]

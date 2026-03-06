@@ -22,7 +22,7 @@ metadata = MetaData()
 
 
 class StatusDeployment(enum.Enum):
-    CREATED = 'CREATED'
+    CREATED = "CREATED"
     DELETED = "DELETED"
 
 
