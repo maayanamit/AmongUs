@@ -33,23 +33,30 @@ def get_deployment_by_id(id_dep: str):
     return None
 
 
-def update_deployment_name(id_dep: str, new_name: str) -> str:  # new name
+def update_deployment_name(id_dep: str, new_name: str):
     session = Session(engine)
+    old_name: str
     with session.begin():
         query = select(Deployment).where(Deployment.id == id_dep)
         deployment: Deployment = session.scalar(query)
+        if not deployment:
+            return None
         old_name = deployment.db_name
         deployment.db_name = new_name
-        return old_name
+    dep = session.scalar(select(Deployment).where(Deployment.db_name == new_name))
+    session.close()
+    return {"id": str(dep.id), "db_name": old_name}
 
 
-def delete_by_id(id_dep: str):  # TODO check that id exists in db
+def delete_by_id(id_dep: str, username: str):  # TODO check that id exists in db
     session = Session(engine)
     with session.begin():
         query = select(Deployment).where(Deployment.id == id_dep)
         deployment: Deployment = session.scalar(query)
+        if not deployment or deployment.username != username:
+            return None
         deployment.status = StatusDeployment.DELETED
-        return True
+        return deployment.db_name
 
 
 def get_connection_string(id_dep: str):
